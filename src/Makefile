@@ -4,25 +4,42 @@
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
 # Your platform. See PLATS for possible values.
-PLAT= none
+PLAT= windows
 
-CC= gcc -std=gnu99
-CFLAGS= -O2 -Wall -Wextra -DLUA_COMPAT_5_2 $(SYSCFLAGS) $(MYCFLAGS)
-LDFLAGS= $(SYSLDFLAGS) $(MYLDFLAGS)
-LIBS= -lm $(SYSLIBS) $(MYLIBS)
+CC=	cl
+# /O2 Geschwindigkeit optimieren
+# /Wall Alle Warnungen deaktivieren
+# /W<n> Warnstufe festlegen (Standard: n=1)
+CFLAGS= /O2 /W2 /DLUA_COMPAT_5_2 $(SYSCFLAGS) $(MYCFLAGS)
 
-AR= ar rcu
-RANLIB= ranlib
-RM= rm -f
+LINK= link
+LDFLAGS= /NOLOGO $(SYSLDFLAGS) $(MYLDFLAGS)
 
-SYSCFLAGS=
+#AR= ar rcu
+#RANLIB= ranlib
+RM= del
+
+# @see luaconf.h :
+#  if you want to create one Windows DLL with the core and the libraries, 
+#  you may want to use the following definition ...
+# (define LUA_BUILD_AS_DLL to get it).
+# dllexport ... Bibliothek "lua-5.3.3.lib" und Objekt "lua-5.3.3.exp" werden erstellt.
+SYSCFLAGS= /DLUA_BUILD_AS_DLL
 SYSLDFLAGS=
 SYSLIBS=
 
-MYCFLAGS=
+MYCFLAGS= /nologo
 MYLDFLAGS=
 MYLIBS=
 MYOBJS=
+
+.c.o:
+	$(CC) /c $(CFLAGS) /Fo:$@ $<
+
+LUA_REL=5.3.3
+LUA_DLL=lua-$(LUA_REL).dll
+LUA_LIB=lua-$(LUA_REL).lib
+LUA_EXP=lua-$(LUA_REL).exp
 
 # == END OF USER SETTINGS -- NO NEED TO CHANGE ANYTHING BELOW THIS LINE =======
 
@@ -35,7 +52,7 @@ CORE_O=	lapi.o lcode.o lctype.o ldebug.o ldo.o ldump.o lfunc.o lgc.o llex.o \
 LIB_O=	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o \
 	lmathlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o loadlib.o linit.o
 BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
-
+ 
 LUA_T=	lua
 LUA_O=	lua.o
 
@@ -51,22 +68,26 @@ default: $(PLAT)
 
 all:	$(ALL_T)
 
-o:	$(ALL_O)
+#o:	$(ALL_O)
 
-a:	$(ALL_A)
+#a:	$(ALL_A)
+
+$(LUA_DLL): $(BASE_O)
+	$(LINK) /DLL $(LDFLAGS) /OUT:$@ $(BASE_O)
+	lib /OUT:lua-static.lib $(BASE_O)
 
 $(LUA_A): $(BASE_O)
 	$(AR) $@ $(BASE_O)
 	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(LUA_A)
-	$(CC) -o $@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
+	$(LINK) -OUT:$@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
 
 $(LUAC_T): $(LUAC_O) $(LUA_A)
-	$(CC) -o $@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS)
+	$(LINK) -OUT:$@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS) lua-static.lib
 
 clean:
-	$(RM) $(ALL_T) $(ALL_O)
+	$(RM) $(ALL_T) $(ALL_O) $(LUA_DLL) $(LUA_LIB) $(LUA_EXP)
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c
@@ -117,6 +138,13 @@ mingw:
 	"AR=$(CC) -shared -o" "RANLIB=strip --strip-unneeded" \
 	"SYSCFLAGS=-DLUA_BUILD_AS_DLL" "SYSLIBS=" "SYSLDFLAGS=-s" lua.exe
 	$(MAKE) "LUAC_T=luac.exe" luac.exe
+	
+windows:	
+	$(MAKE) /$(MAKEFLAGS) $(LUA_DLL)
+	$(MAKE) /$(MAKEFLAGS) $(LUA_O)
+	$(MAKE) /$(MAKEFLAGS) "LUA_T=lua.exe" "LUA_A=$(LUA_LIB)" lua.exe
+	$(MAKE) /$(MAKEFLAGS) $(LUAC_O)
+	$(MAKE) /$(MAKEFLAGS) "LUAC_T=luac.exe" "LUA_A=$(LUA_LIB)" luac.exe
 
 posix:
 	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_POSIX"
