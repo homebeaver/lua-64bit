@@ -1,0 +1,9 @@
+[submodule "hump"]
+	path = hump
+	url = git://github.com/vrld/hump
+[submodule "pattern/mediator"]
+	path = pattern/mediator
+	url = https://github.com/Olivine-Labs/mediator_lua
+[submodule "lanes"]
+	path = lanes
+	url = https://github.com/LuaLanes/lanes
