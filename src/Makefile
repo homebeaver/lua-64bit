@@ -119,7 +119,7 @@ $(LUAC_T): $(LUAC_O) $(LUA_A)
 	$(LINK) $(L_OUT_FN)$@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS) $(LUA_STATIC_LIB)
 
 clean:
-	$(RM) $(ALL_T) $(ALL_O) $(LUA_DLL) $(LUA_LIB) $(LUA_EXP)
+	$(RM) $(ALL_T) $(ALL_O) $(LUA_DLL) $(LUA_LIB) $(LUA_EXP) $(LUA_STATIC_LIB)
 
 depend:
 	@$(CC) $(CFLAGS) -MM l*.c
