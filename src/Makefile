@@ -4,37 +4,68 @@
 # == CHANGE THE SETTINGS BELOW TO SUIT YOUR ENVIRONMENT =======================
 
 # Your platform. See PLATS for possible values.
-PLAT= windows
+PLAT= none
 
-CC=	cl
+OUT_FN= -o 
+LINK= $(CC)
+L_OUT_FN= -o 
+
+# archive flags:
+# r[ab][f][u]  - replace existing or insert new file(s) into the archive
+# [u]          - only replace files that are newer than current archive contents
+# [c]          - do not warn if the library had to be created
+AR= ar rcu
+RANLIB= ranlib
+
+S_H=-
+
+# cl uses "/" not "-" like gcc , SLASHorHYPHEN S_H , the !IF-part works with windown nmake only , delete it on unix: 
+!IFNDEF _NMAKE_VER
+!ELSE
+PLAT= windows
+S_H=/
+OUT_FN= /Fo:
+L_OUT_FN= /OUT:
+NOLOGO= /nologo
+LINK= link /NOLOGO
+LUA_STATIC_LIB=lua-static.lib
+RM= del
+!ENDIF
+# cl flags:
 # /O2 Geschwindigkeit optimieren
 # /Wall Alle Warnungen deaktivieren
 # /W<n> Warnstufe festlegen (Standard: n=1)
-CFLAGS= /O2 /W2 /DLUA_COMPAT_5_2 $(SYSCFLAGS) $(MYCFLAGS)
+# /Fo: <Datei> Name der Objektdatei
+# gcc flags:
+# -std=<standard>       Assume that the input sources are for <standard>
+# -m64                  Generate 64bit x86-64 code
+# -o <file>             Place the output into <file>
+# -O<number>            Set optimization level to <number>
+# -Wall                 Enable most warning messages
+# -Wextra               Print extra (possibly unwanted) warnings
+ 
+CFLAGS= $(SYSCFLAGS) $(MYCFLAGS)
 
-LINK= link
-LDFLAGS= /NOLOGO $(SYSLDFLAGS) $(MYLDFLAGS)
-
-#AR= ar rcu
-#RANLIB= ranlib
-RM= del
+LDFLAGS= $(SYSLDFLAGS) $(MYLDFLAGS)
 
 # @see luaconf.h :
 #  if you want to create one Windows DLL with the core and the libraries, 
 #  you may want to use the following definition ...
 # (define LUA_BUILD_AS_DLL to get it).
 # dllexport ... Bibliothek "lua-5.3.3.lib" und Objekt "lua-5.3.3.exp" werden erstellt.
-SYSCFLAGS= /DLUA_BUILD_AS_DLL
+SYSCFLAGS= $(S_H)O2 $(S_H)W2 $(S_H)DLUA_COMPAT_5_2 $(S_H)DLUA_BUILD_AS_DLL
 SYSLDFLAGS=
 SYSLIBS=
 
-MYCFLAGS= /nologo
+MYCFLAGS= $(NOLOGO)
 MYLDFLAGS=
 MYLIBS=
 MYOBJS=
 
+LIBS= -lm $(SYSLIBS) $(MYLIBS)
+
 .c.o:
-	$(CC) /c $(CFLAGS) /Fo:$@ $<
+	$(CC) $(S_H)c $(CFLAGS) $(OUT_FN)$@ $<
 
 LUA_REL=5.3.3
 LUA_DLL=lua-$(LUA_REL).dll
@@ -53,10 +84,10 @@ LIB_O=	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o \
 	lmathlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o loadlib.o linit.o
 BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
  
-LUA_T=	lua
+LUA_T=	lua.exe
 LUA_O=	lua.o
 
-LUAC_T=	luac
+LUAC_T=	luac.exe
 LUAC_O=	luac.o
 
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
@@ -74,17 +105,17 @@ all:	$(ALL_T)
 
 $(LUA_DLL): $(BASE_O)
 	$(LINK) /DLL $(LDFLAGS) /OUT:$@ $(BASE_O)
-	lib /OUT:lua-static.lib $(BASE_O)
+	lib /NOLOGO /OUT:$(LUA_STATIC_LIB) $(BASE_O)
 
 $(LUA_A): $(BASE_O)
 	$(AR) $@ $(BASE_O)
 	$(RANLIB) $@
 
 $(LUA_T): $(LUA_O) $(LUA_A)
-	$(LINK) -OUT:$@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
+	$(LINK) $(L_OUT_FN)$@ $(LDFLAGS) $(LUA_O) $(LUA_A) $(LIBS)
 
 $(LUAC_T): $(LUAC_O) $(LUA_A)
-	$(LINK) -OUT:$@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS) lua-static.lib
+	$(LINK) $(L_OUT_FN)$@ $(LDFLAGS) $(LUAC_O) $(LUA_A) $(LIBS) $(LUA_STATIC_LIB)
 
 clean:
 	$(RM) $(ALL_T) $(ALL_O) $(LUA_DLL) $(LUA_LIB) $(LUA_EXP)
@@ -93,7 +124,9 @@ depend:
 	@$(CC) $(CFLAGS) -MM l*.c
 
 echo:
+	@echo "_NMAKE_VER= $(_NMAKE_VER)"
 	@echo "PLAT= $(PLAT)"
+	@echo "LUA_DLL= $(LUA_DLL)"
 	@echo "CC= $(CC)"
 	@echo "CFLAGS= $(CFLAGS)"
 	@echo "LDFLAGS= $(SYSLDFLAGS)"
@@ -140,11 +173,11 @@ mingw:
 	$(MAKE) "LUAC_T=luac.exe" luac.exe
 	
 windows:	
-	$(MAKE) /$(MAKEFLAGS) $(LUA_DLL)
-	$(MAKE) /$(MAKEFLAGS) $(LUA_O)
-	$(MAKE) /$(MAKEFLAGS) "LUA_T=lua.exe" "LUA_A=$(LUA_LIB)" lua.exe
-	$(MAKE) /$(MAKEFLAGS) $(LUAC_O)
-	$(MAKE) /$(MAKEFLAGS) "LUAC_T=luac.exe" "LUA_A=$(LUA_LIB)" luac.exe
+	$(MAKE) /NOLOGO /$(MAKEFLAGS) $(LUA_DLL)
+	$(MAKE) /NOLOGO /$(MAKEFLAGS) $(LUA_O)
+	$(MAKE) /NOLOGO /$(MAKEFLAGS) "LUA_T=lua.exe" "LUA_A=$(LUA_LIB)" lua.exe
+	$(MAKE) /NOLOGO /$(MAKEFLAGS) $(LUAC_O)
+	$(MAKE) /NOLOGO /$(MAKEFLAGS) "LUAC_T=luac.exe" "LUA_A=$(LUA_LIB)" luac.exe
 
 posix:
 	$(MAKE) $(ALL) SYSCFLAGS="-DLUA_USE_POSIX"
