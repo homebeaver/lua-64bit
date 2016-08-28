@@ -29,6 +29,7 @@ L_OUT_FN= /OUT:
 NOLOGO= /nologo
 LINK= link /NOLOGO
 LUA_STATIC_LIB=lua-static.lib
+EXECUTABLE_SUFFIX= .exe
 RM= del
 !ENDIF
 # cl flags:
@@ -84,10 +85,10 @@ LIB_O=	lauxlib.o lbaselib.o lbitlib.o lcorolib.o ldblib.o liolib.o \
 	lmathlib.o loslib.o lstrlib.o ltablib.o lutf8lib.o loadlib.o linit.o
 BASE_O= $(CORE_O) $(LIB_O) $(MYOBJS)
  
-LUA_T=	lua.exe
+LUA_T=	lua$(EXECUTABLE_SUFFIX)
 LUA_O=	lua.o
 
-LUAC_T=	luac.exe
+LUAC_T=	luac$(EXECUTABLE_SUFFIX)
 LUAC_O=	luac.o
 
 ALL_O= $(BASE_O) $(LUA_O) $(LUAC_O)
