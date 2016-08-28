@@ -14,7 +14,7 @@ L_OUT_FN= -o
 # r[ab][f][u]  - replace existing or insert new file(s) into the archive
 # [u]          - only replace files that are newer than current archive contents
 # [c]          - do not warn if the library had to be created
-AR= ar rcu
+AR= ar -c -rU
 RANLIB= ranlib
 
 S_H=-
